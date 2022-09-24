@@ -1,6 +1,6 @@
 specVersion: v0.1.0
 package:
-  name: "substreams_template"
+  name: "balancer_substreams"
   version: v0.1.0
 
 imports:
@@ -8,7 +8,7 @@ imports:
 
 protobuf:
   files:
-    - erc721.proto
+    - balancer.proto
   importPaths:
     - ./proto
 
