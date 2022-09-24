@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package balancer.types.v1;
+
+message Pools {
+  repeated Pool pools = 1;
+}
+
+message Pool {
+  bytes address = 1;
+}
