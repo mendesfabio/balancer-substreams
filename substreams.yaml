@@ -18,18 +18,10 @@ binaries:
     file: ./target/wasm32-unknown-unknown/release/substreams_template.wasm
 
 modules:
-  - name: map_transfers
+  - name: map_pools_created
     kind: map
     initialBlock: 12287507
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
-      type: proto:eth.erc721.v1.Transfers
-
-  - name: store_transfers
-    kind: store
-    initialBlock: 12287507
-    updatePolicy: add
-    valueType: int64
-    inputs:
-      - map: map_transfers
+      type: proto:balancer.types.v1.Pools
