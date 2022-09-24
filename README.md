@@ -1,15 +1,6 @@
 # StreamingFast Substreams Template
+
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-## Quick Start (Gitpod)
-
-Use these steps to conveniently open your repository in a Gitpod.
-
-1. First, [copy this repository](https://github.com/streamingfast/substreams-template/generate)
-2. Grab a StreamingFast key from [https://app.dfuse.io/](https://app.dfuse.io/)
-3. Create a [Gitpod](https://gitpod.io) account
-4. Configure a `STREAMINGFAST_KEY` variable in your Gitpod account settings
-5. Open your repository as a [Gitpod workspace](https://gitpod.io/workspaces)
 
 ## Quick Start (Locally)
 
@@ -114,6 +105,7 @@ substreams run -e api-dev.streamingfast.io:443 substreams.yaml map_transfers --s
 # to run the store module (and the map module in the background)
 substreams run -e api-dev.streamingfast.io:443 substreams.yaml store_transfers --start-block 12292922 --stop-block +1
 ```
+
 Let's break down everything happening above.
 
 - `substreams` is our executable
