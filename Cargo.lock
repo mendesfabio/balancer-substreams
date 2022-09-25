@@ -854,9 +854,12 @@ name = "substreams-template"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bigdecimal",
  "ethabi",
  "getrandom",
+ "hex",
  "hex-literal",
+ "num-bigint",
  "prost 0.11.0",
  "substreams",
  "substreams-ethereum",
