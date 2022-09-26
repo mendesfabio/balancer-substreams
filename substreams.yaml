@@ -18,10 +18,51 @@ binaries:
     file: ./target/wasm32-unknown-unknown/release/substreams_template.wasm
 
 modules:
-  - name: map_pools_created
+  - name: map_pools_registered
     kind: map
-    initialBlock: 12287507
+    initialBlock: 15503491
     inputs:
       - source: sf.ethereum.type.v2.Block
     output:
       type: proto:balancer.types.v1.Pools
+
+  - name: map_tokens_registered
+    kind: map
+    initialBlock: 15503491
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:balancer.types.v1.PoolTokens
+
+  - name: store_pools
+    kind: store
+    initialBlock: 15503491
+    updatePolicy: set
+    valueType: proto:balancer.types.v1.Pool
+    inputs:
+      - map: map_pools_registered
+
+  - name: store_pool_tokens
+    kind: store
+    initialBlock: 15503491
+    updatePolicy: set
+    valueType: proto:balancer.types.v1.PoolToken
+    inputs:
+      - map: map_tokens_registered
+
+  - name: map_swap_fee_percentage_changed
+    kind: map
+    initialBlock: 12369621
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+      - store: store_pools
+    output:
+      type: proto:balancer.types.v1.Pools
+
+  - name: map_swaps
+    kind: map
+    initialBlock: 12369621
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:balancer.types.v1.Swaps
