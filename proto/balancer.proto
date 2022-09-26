@@ -7,5 +7,37 @@ message Pools {
 }
 
 message Pool {
+  string id = 1;
+  string address = 2;
+  string swap_fee = 3; 
+  string pool_type = 4;
+}
+
+message PoolTokens {
+  repeated PoolToken pool_tokens = 1;
+}
+
+message PoolToken {
   string address = 1;
+  string pool_id = 2;
+}
+
+message Swaps {
+  repeated Swap swaps = 1;
+}
+
+message Swap {
+  string id = 1;
+  string caller = 2;
+  string token_in = 3;
+  string token_in_sym = 4;
+  string token_out = 5;
+  string token_out_sym = 6;
+  string token_amount_in = 7;
+  string token_amount_out = 8;
+  string value_usd = 9;
+  string pool_id = 10;
+  string user_address = 11;
+  uint64 timestamp = 12;
+  string tx = 13;
 }
