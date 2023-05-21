@@ -1,0 +1,17 @@
+specVersion: 0.0.6
+description: Balancer V2 Subgraph (powered by Substreams)
+repository: https://github.com/mendesfabio/balancer-substreams.git
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  - kind: substreams
+    name: balancer_v2
+    network: mainnet
+    source:
+      package:
+        moduleName: graph_out
+        file: substreams.spkg
+    mapping:
+      kind: substreams/graph-entities
+      apiVersion: 0.0.5
