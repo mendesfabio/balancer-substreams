@@ -1,34 +1,42 @@
 [package]
-name = "substreams-template"
+name = "substreams-balancer-v2"
 version = "0.1.0"
-description = "Substream template demo project"
+description = "Balancer V2 Substreams"
 edition = "2021"
-repository = "https://github.com/streamingfast/substreams-template"
 
 [lib]
 crate-type = ["cdylib"]
 
-[dependencies]
-ethabi = "17.0"
-hex = "0.4.3"
-hex-literal = "0.3.4"
-prost = "^0.11.0"
-bigdecimal = "0.3"
-num-bigint = "0.4"
-# Use latest from https://crates.io/crates/substreams
-substreams = "0.5.1"
-# Use latest from https://crates.io/crates/substreams-ethereum
-substreams-ethereum = "0.8.0"
-
-# Required so that ethabi > ethereum-types build correctly under wasm32-unknown-unknown
-[target.wasm32-unknown-unknown.dependencies]
-getrandom = { version = "0.2", features = ["custom"] }
-
-[build-dependencies]
-anyhow = "1"
-substreams-ethereum = "~0.2.0"
-
 [profile.release]
 lto = true
-opt-level = 's'
+opt-level = "z"
 strip = "debuginfo"
+
+[dependencies]
+ethabi = "17.0"
+wasm-bindgen = "0.2.79"
+prost = "0.11.0"
+prost-types = "0.11.0"
+hex = "0.4.3"
+substreams = { version = "0.5.6" }
+substreams-ethereum = { git = "https://github.com/streamingfast/substreams-ethereum" }
+substreams-entity-change = {git = "https://github.com/streamingfast/substreams-entity-change/", branch = "develop"}
+num-bigint = "0.4"
+bigdecimal = "0.3"
+pad = "0.1"
+base64 = "0.13.0"
+stable-hash_legacy = { version = "0.3.3", package = "stable-hash" }
+stable-hash = { version = "0.4.2"}
+thiserror = "1.0.25"
+num-traits = "0.2.15"
+tiny-keccak = "2.0.2"
+phf = { version = "0.11.1", features = ["macros"] }
+
+[build-dependencies]
+prost-build = "0.11.0"
+anyhow = "1"
+substreams-ethereum = { git = "https://github.com/streamingfast/substreams-ethereum" }
+
+[patch.crates-io]
+substreams = { git = "https://github.com/streamingfast/substreams-rs", branch = "develop" }
+#substreams = { path = "/Users/abourget/sf/substreams-rs/substreams" }
