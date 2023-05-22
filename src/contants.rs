@@ -1,4 +1,4 @@
-use hex_literal::hex;
+use substreams::hex;
 
 type Address = [u8; 20];
 
