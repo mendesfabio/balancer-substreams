@@ -1,152 +1,169 @@
-mod abi;
-mod contants;
-mod pb;
+extern crate core;
 
-use pb::balancer::{Pool, PoolToken, PoolTokens, Pools, Swap, Swaps};
-use substreams::errors::Error;
-use substreams::store::StoreGet;
-use substreams::{log, proto, store, Hex};
-use substreams_ethereum::{pb::eth::v2 as eth, Event};
+pub mod abi;
+mod contants;
+mod db;
+mod key;
+mod pb;
+mod tables;
 
 use crate::contants::VAULT_ADDRESS;
-
-substreams_ethereum::init!();
+use crate::ethpb::v2::Block;
+use crate::pb::balancer::{
+    Pool, PoolToken, PoolTokenBalanceChange, PoolTokenBalanceChanges, PoolTokens, Pools,
+};
+use crate::tables::Tables;
+use substreams::errors::Error;
+use substreams::prelude::*;
+use substreams::store::StoreSetProto;
+use substreams::{log, Hex};
+use substreams_entity_change::pb::entity::EntityChanges;
+use substreams_ethereum::pb::eth as ethpb;
 
 #[substreams::handlers::map]
-pub fn map_pools_registered(block: eth::Block) -> Result<Pools, Error> {
-    let mut pools = vec![];
+pub fn map_pools_registered(block: Block) -> Result<Pools, Error> {
+    use abi::vault::events::PoolRegistered;
 
-    for log in block.logs() {
-        if let Some(event) = abi::vault::events::PoolRegistered::match_and_decode(log) {
-            log::info!("Pool ID: {}", Hex(&event.pool_id));
+    Ok(Pools {
+        pools: block
+            .events::<PoolRegistered>(&[&VAULT_ADDRESS])
+            .filter_map(|(event, log)| {
+                log::info!("pool_id: {}", Hex(&event.pool_id));
 
-            if log.address() != VAULT_ADDRESS {
-                continue;
-            };
-
-            pools.push(Pool {
-                id: Hex(&event.pool_id).to_string(),
-                address: Hex(&event.pool_address).to_string(),
-                swap_fee: "0".to_string(),
-                pool_type: "".to_string(),
-            });
-        }
-    }
-
-    Ok(Pools { pools })
+                Some(Pool {
+                    id: Hex(event.pool_id).to_string(),
+                    address: Hex(event.pool_id).to_string(),
+                    log_ordinal: log.ordinal(),
+                })
+            })
+            .collect(),
+    })
 }
 
 #[substreams::handlers::store]
-fn store_pools(pools: Pools, output: store::StoreSet) {
-    log::info!("Pools created: {}", pools.pools.len());
-
+pub fn store_pools(pools: Pools, store: StoreSetProto<Pool>) {
     for pool in pools.pools {
-        output.set(0, Hex::encode(&pool.id), &proto::encode(&pool).unwrap());
+        let pool_id = &pool.id;
+        store.set(pool.log_ordinal, format!("pool_id:{pool_id}"), &pool);
     }
 }
 
 #[substreams::handlers::map]
-pub fn map_swap_fee_percentage_changed(
-    block: eth::Block,
-    pools_store: StoreGet,
-) -> Result<Pools, Error> {
-    let mut pools = vec![];
+pub fn map_pool_tokens_registered(block: Block) -> Result<PoolTokens, Error> {
+    use abi::vault::events::TokensRegistered;
 
-    for log in block.logs() {
-        if let Some(event) = abi::vault::events::PoolRegistered::match_and_decode(log) {
-            log::info!("Pool ID: {}", Hex(&event.pool_id));
+    Ok(PoolTokens {
+        pool_tokens: block
+            .events::<TokensRegistered>(&[&VAULT_ADDRESS])
+            .flat_map(|(event, log)| {
+                log::info!("poolId: {}", Hex(&event.pool_id));
 
-            if log.address() != VAULT_ADDRESS {
-                continue;
-            };
+                event.tokens.iter().map(|token| {
+                    let id = format!("{}-{}", Hex(event.pool_id), Hex(*token));
 
-            pools.push(Pool {
-                id: Hex(&event.pool_id).to_string(),
-                address: Hex(&event.pool_address).to_string(),
-                swap_fee: "0".to_string(),
-                pool_type: "".to_string(),
-            });
-        }
-    }
-
-    Ok(Pools { pools })
-}
-
-#[substreams::handlers::map]
-pub fn map_tokens_registered(block: eth::Block) -> Result<PoolTokens, Error> {
-    let mut pool_tokens = vec![];
-
-    for log in block.logs() {
-        if let Some(event) = abi::vault::events::TokensRegistered::match_and_decode(log) {
-            log::info!("Pool ID: {}", Hex(&event.pool_id));
-
-            if log.address() != VAULT_ADDRESS {
-                continue;
-            };
-
-            for pool_token in &event.tokens {
-                pool_tokens.push(PoolToken {
-                    address: Hex(pool_token).to_string(),
-                    pool_id: Hex(&event.pool_id).to_string(),
-                });
-            }
-        }
-    }
-
-    Ok(PoolTokens { pool_tokens })
+                    PoolToken {
+                        id,
+                        address: Hex(*token).to_string(),
+                        pool_id: Hex(event.pool_id).to_string(),
+                        balance: "0".to_string(),
+                        log_ordinal: log.ordinal(),
+                    }
+                })
+            })
+            .collect(),
+    })
 }
 
 #[substreams::handlers::store]
-fn store_pool_tokens(pool_tokens: PoolTokens, output: store::StoreSet) {
-    log::info!("Tokens registered: {}", pool_tokens.pool_tokens.len());
-
+pub fn store_pool_tokens(pool_tokens: PoolTokens, store: StoreSetProto<PoolToken>) {
     for pool_token in pool_tokens.pool_tokens {
-        let token_id = [pool_token.pool_id.clone(), pool_token.address.clone()].join("-");
+        let pool_token_address = &pool_token.address;
+        store.set(
+            pool_token.log_ordinal,
+            format!("pool_token:{pool_token_address}"),
+            &pool_token,
+        );
+    }
+}
 
-        output.set(
-            0,
-            Hex::encode(&token_id),
-            &proto::encode(&pool_token).unwrap(),
+pub fn map_join_exit_balance_changes(block: Block) -> Result<PoolTokenBalanceChanges, Error> {
+    use abi::vault::events::PoolBalanceChanged;
+
+    Ok(PoolTokenBalanceChanges {
+        pool_token_balance_changes: block
+            .events::<PoolBalanceChanged>(&[&VAULT_ADDRESS])
+            .flat_map(|(event, log)| {
+                log::info!("poolId: {}", Hex(&event.pool_id));
+
+                event.tokens.iter().enumerate().map(|(i, token)| {
+                    let id: String = format!("{}-{}", Hex(event.pool_id), Hex(*token));
+
+                    PoolTokenBalanceChange {
+                        pool_token_id: id,
+                        delta_balance: event.deltas[i].to_string(),
+                        log_ordinal: log.ordinal(),
+                    }
+                })
+            })
+            .collect(),
+    })
+}
+
+#[substreams::handlers::map]
+pub fn map_swap_balance_changes(block: Block) -> Result<PoolTokenBalanceChanges, Error> {
+    use abi::vault::events::Swap;
+
+    let balance_changes: Vec<PoolTokenBalanceChange> = block
+        .events::<Swap>(&[&VAULT_ADDRESS])
+        .flat_map(|(event, log)| {
+            log::info!("pool_id: {}", Hex(&event.pool_id));
+
+            let id_in: String = format!("{}-{}", Hex(event.pool_id), Hex(event.token_in));
+            let id_out: String = format!("{}-{}", Hex(event.pool_id), Hex(event.token_out));
+
+            vec![
+                PoolTokenBalanceChange {
+                    pool_token_id: id_in,
+                    delta_balance: event.amount_in.to_string(),
+                    log_ordinal: log.ordinal(),
+                },
+                PoolTokenBalanceChange {
+                    pool_token_id: id_out,
+                    delta_balance: event.amount_out.neg().to_string(),
+                    log_ordinal: log.ordinal(),
+                },
+            ]
+        })
+        .collect();
+
+    Ok(PoolTokenBalanceChanges {
+        pool_token_balance_changes: balance_changes,
+    })
+}
+
+#[substreams::handlers::store]
+pub fn store_pool_token_balances(changes: PoolTokenBalanceChanges, store: StoreSetBigInt) {
+    for pool_token_balance_change in changes.pool_token_balance_changes {
+        let pool_token_id = &pool_token_balance_change.pool_token_id;
+        store.set(
+            pool_token_balance_change.log_ordinal,
+            format!("pool_token_balance:{pool_token_id}"),
+            &BigInt::try_from(pool_token_balance_change.delta_balance).unwrap(),
         );
     }
 }
 
 #[substreams::handlers::map]
-pub fn map_swaps(block: eth::Block) -> Result<Swaps, Error> {
-    let mut swaps = vec![];
+pub fn graph_out(
+    pools_registered: Pools,                         /* map_pools_registered */
+    pool_tokens_registered: PoolTokens,              /* map_pool_tokens_registered */
+    pool_token_balances_deltas: Deltas<DeltaBigInt>, /* store_pool_token_balances */
+) -> Result<EntityChanges, Error> {
+    let mut tables = Tables::new();
 
-    for log in block.logs() {
-        if let Some(event) = abi::vault::events::Swap::match_and_decode(log) {
-            log::info!("Swap found: {}", Hex(&log.receipt.transaction.hash));
+    db::pools_registered_pool_entity_changes(&mut tables, &pools_registered);
+    db::pool_tokens_registered_pool_token_entity_changes(&mut tables, &pool_tokens_registered);
+    db::pool_token_balance_entity_change(&mut tables, &pool_token_balances_deltas);
 
-            if log.address() != VAULT_ADDRESS {
-                continue;
-            };
-
-            swaps.push(Swap {
-                id: Hex(&log.receipt.transaction.hash).to_string(),
-                caller: Hex(&log.receipt.transaction.from).to_string(),
-                user_address: Hex(&log.receipt.transaction.from).to_string(),
-                pool_id: Hex(&event.pool_id).to_string(),
-                token_in: Hex(event.token_in).to_string(),
-                token_in_sym: "TKN".to_string(),
-                token_amount_in: event.amount_in.to_string(),
-                token_out: Hex(event.token_out).to_string(),
-                token_out_sym: "TKN".to_string(),
-                token_amount_out: event.amount_out.to_string(),
-                value_usd: "0".to_string(),
-                tx: Hex(&log.receipt.transaction.hash).to_string(),
-                timestamp: block
-                    .header
-                    .as_ref()
-                    .unwrap()
-                    .timestamp
-                    .as_ref()
-                    .unwrap()
-                    .seconds as u64,
-            });
-        }
-    }
-
-    Ok(Swaps { swaps })
+    Ok(tables.to_entity_changes())
 }
