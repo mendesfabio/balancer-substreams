@@ -58,13 +58,15 @@ pub fn map_pool_tokens_registered(block: Block) -> Result<PoolTokens, Error> {
             .flat_map(|(event, log)| {
                 log::info!("poolId: {}", Hex(&event.pool_id));
 
-                event.tokens.iter().map(|token| {
-                    let id = format!("{}-{}", Hex(event.pool_id), Hex(*token));
+                let tokens: Vec<Vec<u8>> = event.tokens.clone();
+
+                tokens.into_iter().map(move |token| {
+                    let id = format!("{}-{}", Hex(&event.pool_id), Hex(&token));
 
                     PoolToken {
-                        id,
-                        address: Hex(*token).to_string(),
-                        pool_id: Hex(event.pool_id).to_string(),
+                        id: id.clone(),
+                        address: Hex(&token).to_string(),
+                        pool_id: Hex(&event.pool_id).to_string(),
                         balance: "0".to_string(),
                         log_ordinal: log.ordinal(),
                     }
@@ -95,12 +97,15 @@ pub fn map_join_exit_balance_changes(block: Block) -> Result<PoolTokenBalanceCha
             .flat_map(|(event, log)| {
                 log::info!("poolId: {}", Hex(&event.pool_id));
 
-                event.tokens.iter().enumerate().map(|(i, token)| {
-                    let id: String = format!("{}-{}", Hex(event.pool_id), Hex(*token));
+                let tokens: Vec<Vec<u8>> = event.tokens.clone();
+                let deltas: Vec<BigInt> = event.deltas.clone();
+
+                tokens.into_iter().enumerate().map(move |(i, token)| {
+                    let id = format!("{}-{}", Hex(&event.pool_id), Hex(&token));
 
                     PoolTokenBalanceChange {
                         pool_token_id: id,
-                        delta_balance: event.deltas[i].to_string(),
+                        delta_balance: deltas[i].to_string(),
                         log_ordinal: log.ordinal(),
                     }
                 })
