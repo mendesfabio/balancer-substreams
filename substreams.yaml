@@ -1,10 +1,10 @@
 specVersion: v0.1.0
 package:
-  name: "balancer_substreams"
-  version: v0.1.0
+  name: balancer_v2
+  version: v0.2.4
 
 imports:
-  eth: https://github.com/streamingfast/sf-ethereum/releases/download/v0.10.2/ethereum-v0.10.4.spkg
+  entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v1.1.0/substreams-entity-change-v1.1.0.spkg
 
 protobuf:
   files:
@@ -15,7 +15,7 @@ protobuf:
 binaries:
   default:
     type: wasm/rust-v1
-    file: ./target/wasm32-unknown-unknown/release/substreams_template.wasm
+    file: target/wasm32-unknown-unknown/release/substreams_balancer_v2.wasm
 
 modules:
   - name: map_pools_registered
@@ -26,14 +26,6 @@ modules:
     output:
       type: proto:balancer.types.v1.Pools
 
-  - name: map_tokens_registered
-    kind: map
-    initialBlock: 15503491
-    inputs:
-      - source: sf.ethereum.type.v2.Block
-    output:
-      type: proto:balancer.types.v1.PoolTokens
-
   - name: store_pools
     kind: store
     initialBlock: 15503491
@@ -41,6 +33,14 @@ modules:
     valueType: proto:balancer.types.v1.Pool
     inputs:
       - map: map_pools_registered
+
+  - name: map_tokens_registered
+    kind: map
+    initialBlock: 15503491
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:balancer.types.v1.PoolTokens
 
   - name: store_pool_tokens
     kind: store
@@ -50,19 +50,40 @@ modules:
     inputs:
       - map: map_tokens_registered
 
-  - name: map_swap_fee_percentage_changed
+  - name: map_join_exit_balance_changes
     kind: map
-    initialBlock: 12369621
+    initialBlock: 15503491
     inputs:
       - source: sf.ethereum.type.v2.Block
-      - store: store_pools
+      - map: map_pools_registered
+      - map: map_tokens_registered
     output:
-      type: proto:balancer.types.v1.Pools
+      type: proto:balancer.types.v1.PoolTokenBalanceChanges
 
-  - name: map_swaps
+  - name: map_swap_balance_changes
     kind: map
-    initialBlock: 12369621
+    initialBlock: 15503491
     inputs:
       - source: sf.ethereum.type.v2.Block
+      - map: map_pools_registered
+      - map: map_tokens_registered
     output:
-      type: proto:balancer.types.v1.Swaps
+      type: proto:balancer.types.v1.PoolTokenBalanceChanges
+
+  - name: store_pool_token_balances
+    kind: store
+    updatePolicy: set
+    initialBlock: 15503491
+    valueType: bigint
+    inputs:
+      - map: map_join_exit_balance_changes
+      - map: map_swap_balance_changes
+
+  - name: graph_out
+    kind: map
+    initialBlock: 15503491
+    inputs:
+      - store: store_pool_token_balances
+        mode: deltas
+    output:
+      type: proto:sf.substreams.entity.v1.EntityChanges
