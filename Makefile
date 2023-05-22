@@ -1,10 +1,12 @@
+ENDPOINT ?= mainnet.eth.streamingfast.io:443
+
 .PHONY: build
 build:
 	cargo build --target wasm32-unknown-unknown --release
 
 .PHONY: stream
 stream:
-	substreams run -e api-dev.streamingfast.io:443 substreams.yaml map_pools_registered -s 12292922 -t +10
+	substreams run -e $(ENDPOINT) substreams.yaml map_pools_registered -s 15503491 -t +1000
 
 .PHONY: protogen
 protogen:
