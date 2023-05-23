@@ -15,7 +15,7 @@ use crate::pb::balancer::{
 use crate::tables::Tables;
 use substreams::errors::Error;
 use substreams::prelude::*;
-use substreams::store::StoreSetProto;
+use substreams::store::{StoreAddBigInt, StoreSetProto};
 use substreams::{log, Hex};
 use substreams_entity_change::pb::entity::EntityChanges;
 use substreams_ethereum::pb::eth as ethpb;
@@ -32,7 +32,7 @@ pub fn map_pools_registered(block: Block) -> Result<Pools, Error> {
 
                 Some(Pool {
                     id: Hex(event.pool_id).to_string(),
-                    address: Hex(event.pool_id).to_string(),
+                    address: Hex(event.pool_address).to_string(),
                     log_ordinal: log.ordinal(),
                 })
             })
@@ -88,6 +88,7 @@ pub fn store_pool_tokens(pool_tokens: PoolTokens, store: StoreSetProto<PoolToken
     }
 }
 
+#[substreams::handlers::map]
 pub fn map_join_exit_balance_changes(block: Block) -> Result<PoolTokenBalanceChanges, Error> {
     use abi::vault::events::PoolBalanceChanged;
 
@@ -147,13 +148,26 @@ pub fn map_swap_balance_changes(block: Block) -> Result<PoolTokenBalanceChanges,
 }
 
 #[substreams::handlers::store]
-pub fn store_pool_token_balances(changes: PoolTokenBalanceChanges, store: StoreSetBigInt) {
-    for pool_token_balance_change in changes.pool_token_balance_changes {
-        let pool_token_id = &pool_token_balance_change.pool_token_id;
-        store.set(
-            pool_token_balance_change.log_ordinal,
-            format!("pool_token_balance:{pool_token_id}"),
-            &BigInt::try_from(pool_token_balance_change.delta_balance).unwrap(),
+pub fn store_pool_token_balances(
+    join_exit_changes: PoolTokenBalanceChanges,
+    swap_changes: PoolTokenBalanceChanges,
+    store: StoreAddBigInt,
+) {
+    for balance_change in &join_exit_changes.pool_token_balance_changes {
+        let pool_token_id = &balance_change.pool_token_id;
+        store.add(
+            1,
+            format!("pool_token_balance:{}", pool_token_id),
+            &BigInt::try_from(&balance_change.delta_balance).unwrap(),
+        );
+    }
+
+    for balance_change in &swap_changes.pool_token_balance_changes {
+        let pool_token_id = &balance_change.pool_token_id;
+        store.add(
+            1,
+            format!("pool_token_balance:{}", pool_token_id),
+            &BigInt::try_from(&balance_change.delta_balance).unwrap(),
         );
     }
 }

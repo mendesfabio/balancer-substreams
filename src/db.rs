@@ -45,7 +45,7 @@ pub fn pool_token_balance_entity_change(
     for delta in pool_token_balances_store_deltas
         .deltas
         .iter()
-        .filter(key_first_segment_in("PoolToken"))
+        .filter(key_first_segment_in("pool_token_balance"))
     {
         let pool_token_id = key::segment(&delta.key, 1);
         tables
