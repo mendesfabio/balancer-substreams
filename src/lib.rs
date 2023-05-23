@@ -98,15 +98,17 @@ pub fn map_join_exit_balance_changes(block: Block) -> Result<PoolTokenBalanceCha
             .flat_map(|(event, log)| {
                 log::info!("poolId: {}", Hex(&event.pool_id));
 
-                let tokens: Vec<Vec<u8>> = event.tokens.clone();
                 let deltas: Vec<BigInt> = event.deltas.clone();
+                let tokens: Vec<Vec<u8>> = event.tokens.clone();
+                let protocol_fee_amounts: Vec<BigInt> = event.protocol_fee_amounts.clone();
 
                 tokens.into_iter().enumerate().map(move |(i, token)| {
-                    let id = format!("{}-{}", Hex(&event.pool_id), Hex(&token));
+                    let pool_token_id = format!("{}-{}", Hex(&event.pool_id), Hex(&token));
+                    let delta_balance = deltas[i].clone() - protocol_fee_amounts[i].clone();
 
                     PoolTokenBalanceChange {
-                        pool_token_id: id,
-                        delta_balance: deltas[i].to_string(),
+                        pool_token_id,
+                        delta_balance: delta_balance.to_string(),
                         log_ordinal: log.ordinal(),
                     }
                 })
