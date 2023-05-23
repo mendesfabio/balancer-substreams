@@ -118,6 +118,29 @@ pub fn map_join_exit_balance_changes(block: Block) -> Result<PoolTokenBalanceCha
 }
 
 #[substreams::handlers::map]
+pub fn map_managed_balance_changes(block: Block) -> Result<PoolTokenBalanceChanges, Error> {
+    use abi::vault::events::PoolBalanceManaged;
+
+    Ok(PoolTokenBalanceChanges {
+        pool_token_balance_changes: block
+            .events::<PoolBalanceManaged>(&[&VAULT_ADDRESS])
+            .filter_map(|(event, log)| {
+                log::info!("pool_id: {}", Hex(&event.pool_id));
+
+                let pool_token_id = format!("{}-{}", Hex(&event.pool_id), Hex(&event.token));
+                let delta_balance = event.cash_delta.clone() + event.managed_delta.clone();
+
+                Some(PoolTokenBalanceChange {
+                    pool_token_id,
+                    delta_balance: delta_balance.to_string(),
+                    log_ordinal: log.ordinal(),
+                })
+            })
+            .collect(),
+    })
+}
+
+#[substreams::handlers::map]
 pub fn map_swap_balance_changes(block: Block) -> Result<PoolTokenBalanceChanges, Error> {
     use abi::vault::events::Swap;
 
@@ -152,10 +175,20 @@ pub fn map_swap_balance_changes(block: Block) -> Result<PoolTokenBalanceChanges,
 #[substreams::handlers::store]
 pub fn store_pool_token_balances(
     join_exit_changes: PoolTokenBalanceChanges,
+    managed_balance_changes: PoolTokenBalanceChanges,
     swap_changes: PoolTokenBalanceChanges,
     store: StoreAddBigInt,
 ) {
     for balance_change in &join_exit_changes.pool_token_balance_changes {
+        let pool_token_id = &balance_change.pool_token_id;
+        store.add(
+            1,
+            format!("pool_token_balance:{}", pool_token_id),
+            &BigInt::try_from(&balance_change.delta_balance).unwrap(),
+        );
+    }
+
+    for balance_change in &managed_balance_changes.pool_token_balance_changes {
         let pool_token_id = &balance_change.pool_token_id;
         store.add(
             1,

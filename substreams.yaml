@@ -58,6 +58,14 @@ modules:
     output:
       type: proto:balancer.types.v1.PoolTokenBalanceChanges
 
+  - name: map_managed_balance_changes
+    kind: map
+    initialBlock: 12286257
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:balancer.types.v1.PoolTokenBalanceChanges
+
   - name: map_swap_balance_changes
     kind: map
     initialBlock: 12286257
@@ -73,6 +81,7 @@ modules:
     valueType: bigint
     inputs:
       - map: map_join_exit_balance_changes
+      - map: map_managed_balance_changes
       - map: map_swap_balance_changes
 
   - name: graph_out
