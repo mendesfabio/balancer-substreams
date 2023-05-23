@@ -1,0 +1,11 @@
+type Pool @entity {
+  id: ID!
+  address: String!
+}
+
+type PoolToken @entity {
+  id: ID!
+  address: String!
+  poolId: String!
+  balance: BigInt!
+}
