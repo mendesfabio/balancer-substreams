@@ -1,4 +1,4 @@
-use substreams::scalar::BigDecimal;
+use substreams::scalar::BigInt;
 use substreams::store::{key_first_segment_in, DeltaBigInt, Deltas};
 
 use crate::key;
@@ -14,8 +14,7 @@ pub fn pools_registered_pool_entity_changes(tables: &mut Tables, pools: &Pools) 
 fn create_pool_entity(tables: &mut Tables, pool: &Pool) {
     tables
         .create_row("Pool", format!("0x{}", &pool.id))
-        .set("address", format!("0x{}", &pool.address))
-        .set("log_ordinal", format!("0x{}", &pool.log_ordinal));
+        .set("address", format!("0x{}", &pool.address));
 }
 
 pub fn pool_tokens_registered_pool_token_entity_changes(
@@ -28,14 +27,13 @@ pub fn pool_tokens_registered_pool_token_entity_changes(
 }
 
 fn create_pool_token_entity(tables: &mut Tables, pool_token: &PoolToken) {
-    let bigdecimal0 = BigDecimal::from(0);
+    let bigint0 = BigInt::zero();
 
     tables
         .create_row("PoolToken", format!("0x{}", &pool_token.id))
         .set("address", format!("0x{}", &pool_token.address))
-        .set("pool_id", format!("0x{}", &pool_token.pool_id))
-        .set("balance", bigdecimal0)
-        .set("log_ordinal", format!("0x{}", &pool_token.log_ordinal));
+        .set("poolId", format!("0x{}", &pool_token.pool_id))
+        .set("balance", bigint0);
 }
 
 pub fn pool_token_balance_entity_change(
