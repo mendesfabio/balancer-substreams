@@ -14,4 +14,4 @@ dataSources:
         file: substreams.spkg
     mapping:
       kind: substreams/graph-entities
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
