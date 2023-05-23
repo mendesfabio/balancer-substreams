@@ -18,38 +18,38 @@
         }
         impl PoolBalanceChanged {
             const TOPIC_ID: [u8; 32] = [
-                129u8,
-                189u8,
-                44u8,
-                131u8,
-                246u8,
-                179u8,
-                167u8,
-                76u8,
-                142u8,
+                229u8,
                 206u8,
-                255u8,
-                109u8,
-                156u8,
-                208u8,
-                74u8,
-                212u8,
-                28u8,
+                36u8,
+                144u8,
+                135u8,
+                206u8,
+                4u8,
+                240u8,
+                90u8,
+                149u8,
+                113u8,
+                146u8,
+                67u8,
+                84u8,
+                0u8,
+                253u8,
+                151u8,
+                134u8,
+                141u8,
+                186u8,
+                14u8,
+                106u8,
+                75u8,
+                76u8,
+                4u8,
                 154u8,
-                103u8,
-                179u8,
-                80u8,
-                195u8,
-                188u8,
-                187u8,
-                119u8,
-                175u8,
-                60u8,
-                59u8,
-                185u8,
-                87u8,
-                49u8,
-                6u8,
+                191u8,
+                138u8,
+                248u8,
+                13u8,
+                174u8,
+                120u8,
             ];
             pub fn match_log(log: &substreams_ethereum::pb::eth::v2::Log) -> bool {
                 if log.topics.len() != 3usize {
@@ -70,7 +70,7 @@
                                 Box::new(ethabi::ParamType::Address),
                             ),
                             ethabi::ParamType::Array(
-                                Box::new(ethabi::ParamType::Uint(256usize)),
+                                Box::new(ethabi::ParamType::Int(256usize)),
                             ),
                             ethabi::ParamType::Array(
                                 Box::new(ethabi::ParamType::Uint(256usize)),
@@ -135,10 +135,10 @@
                         .map(|inner| {
                             let mut v = [0 as u8; 32];
                             inner
-                                .into_uint()
+                                .into_int()
                                 .expect(INTERNAL_ERR)
                                 .to_big_endian(v.as_mut_slice());
-                            substreams::scalar::BigInt::from_unsigned_bytes_be(&v)
+                            substreams::scalar::BigInt::from_signed_bytes_be(&v)
                         })
                         .collect(),
                     protocol_fee_amounts: values
