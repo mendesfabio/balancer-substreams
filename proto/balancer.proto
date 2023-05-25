@@ -9,7 +9,6 @@ message Pools {
 message Pool {
   string id = 1;
   string address = 2;
-  uint64 log_ordinal = 3;
 }
 
 message PoolTokens {
@@ -21,7 +20,6 @@ message PoolToken {
   string address = 2;
   string pool_id = 3;
   string balance = 4;
-  uint64 log_ordinal = 5;
 }
 
 message PoolTokenBalanceChanges {
@@ -31,5 +29,4 @@ message PoolTokenBalanceChanges {
 message PoolTokenBalanceChange {
   string pool_token_id = 1;
   string delta_balance = 2;
-  uint64 log_ordinal = 3;
 }

@@ -33,7 +33,6 @@ pub fn map_pools_registered(block: Block) -> Result<Pools, Error> {
                 Some(Pool {
                     id: Hex(event.pool_id).to_string(),
                     address: Hex(event.pool_address).to_string(),
-                    log_ordinal: log.ordinal(),
                 })
             })
             .collect(),
@@ -44,7 +43,7 @@ pub fn map_pools_registered(block: Block) -> Result<Pools, Error> {
 pub fn store_pools(pools: Pools, store: StoreSetProto<Pool>) {
     for pool in pools.pools {
         let pool_id = &pool.id;
-        store.set(pool.log_ordinal, format!("pool_id:{pool_id}"), &pool);
+        store.set(0, format!("pool_id:{pool_id}"), &pool);
     }
 }
 
@@ -68,7 +67,6 @@ pub fn map_pool_tokens_registered(block: Block) -> Result<PoolTokens, Error> {
                         address: Hex(&token).to_string(),
                         pool_id: Hex(&event.pool_id).to_string(),
                         balance: "0".to_string(),
-                        log_ordinal: log.ordinal(),
                     }
                 })
             })
@@ -80,11 +78,7 @@ pub fn map_pool_tokens_registered(block: Block) -> Result<PoolTokens, Error> {
 pub fn store_pool_tokens(pool_tokens: PoolTokens, store: StoreSetProto<PoolToken>) {
     for pool_token in pool_tokens.pool_tokens {
         let pool_token_address = &pool_token.address;
-        store.set(
-            pool_token.log_ordinal,
-            format!("pool_token:{pool_token_address}"),
-            &pool_token,
-        );
+        store.set(0, format!("pool_token:{pool_token_address}"), &pool_token);
     }
 }
 
@@ -109,7 +103,6 @@ pub fn map_join_exit_balance_changes(block: Block) -> Result<PoolTokenBalanceCha
                     PoolTokenBalanceChange {
                         pool_token_id,
                         delta_balance: delta_balance.to_string(),
-                        log_ordinal: log.ordinal(),
                     }
                 })
             })
@@ -133,7 +126,6 @@ pub fn map_managed_balance_changes(block: Block) -> Result<PoolTokenBalanceChang
                 Some(PoolTokenBalanceChange {
                     pool_token_id,
                     delta_balance: delta_balance.to_string(),
-                    log_ordinal: log.ordinal(),
                 })
             })
             .collect(),
@@ -156,12 +148,10 @@ pub fn map_swap_balance_changes(block: Block) -> Result<PoolTokenBalanceChanges,
                 PoolTokenBalanceChange {
                     pool_token_id: id_in,
                     delta_balance: event.amount_in.to_string(),
-                    log_ordinal: log.ordinal(),
                 },
                 PoolTokenBalanceChange {
                     pool_token_id: id_out,
                     delta_balance: event.amount_out.neg().to_string(),
-                    log_ordinal: log.ordinal(),
                 },
             ]
         })
@@ -182,7 +172,7 @@ pub fn store_pool_token_balances(
     for balance_change in &join_exit_changes.pool_token_balance_changes {
         let pool_token_id = &balance_change.pool_token_id;
         store.add(
-            1,
+            0,
             format!("pool_token_balance:{}", pool_token_id),
             &BigInt::try_from(&balance_change.delta_balance).unwrap(),
         );
@@ -191,7 +181,7 @@ pub fn store_pool_token_balances(
     for balance_change in &managed_balance_changes.pool_token_balance_changes {
         let pool_token_id = &balance_change.pool_token_id;
         store.add(
-            1,
+            0,
             format!("pool_token_balance:{}", pool_token_id),
             &BigInt::try_from(&balance_change.delta_balance).unwrap(),
         );
@@ -200,7 +190,7 @@ pub fn store_pool_token_balances(
     for balance_change in &swap_changes.pool_token_balance_changes {
         let pool_token_id = &balance_change.pool_token_id;
         store.add(
-            1,
+            0,
             format!("pool_token_balance:{}", pool_token_id),
             &BigInt::try_from(&balance_change.delta_balance).unwrap(),
         );

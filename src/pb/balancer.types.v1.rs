@@ -12,8 +12,6 @@ pub struct Pool {
     pub id: ::prost::alloc::string::String,
     #[prost(string, tag="2")]
     pub address: ::prost::alloc::string::String,
-    #[prost(uint64, tag="3")]
-    pub log_ordinal: u64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -32,8 +30,6 @@ pub struct PoolToken {
     pub pool_id: ::prost::alloc::string::String,
     #[prost(string, tag="4")]
     pub balance: ::prost::alloc::string::String,
-    #[prost(uint64, tag="5")]
-    pub log_ordinal: u64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -48,7 +44,5 @@ pub struct PoolTokenBalanceChange {
     pub pool_token_id: ::prost::alloc::string::String,
     #[prost(string, tag="2")]
     pub delta_balance: ::prost::alloc::string::String,
-    #[prost(uint64, tag="3")]
-    pub log_ordinal: u64,
 }
 // @@protoc_insertion_point(module)
