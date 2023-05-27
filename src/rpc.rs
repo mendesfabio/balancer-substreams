@@ -3,7 +3,7 @@ use substreams::log;
 use substreams::Hex;
 use substreams_ethereum::rpc::RpcBatch;
 
-pub fn create_token(token_address: &String) -> Option<Token> {
+pub fn get_erc20_token(token_address: &String) -> Option<Token> {
     let batch = RpcBatch::new();
     let responses = batch
         .add(
