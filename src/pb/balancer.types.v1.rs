@@ -1,16 +1,6 @@
 // @generated
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Vault {
-    #[prost(string, tag="1")]
-    pub id: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
-    pub address: ::prost::alloc::string::String,
-    #[prost(string, tag="3")]
-    pub pools_count: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Pools {
     #[prost(message, repeated, tag="1")]
     pub pools: ::prost::alloc::vec::Vec<Pool>,
@@ -22,8 +12,8 @@ pub struct Pool {
     pub id: ::prost::alloc::string::String,
     #[prost(string, tag="2")]
     pub address: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="3")]
-    pub vault: ::core::option::Option<Vault>,
+    #[prost(string, tag="3")]
+    pub vault: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
