@@ -13,12 +13,31 @@ use crate::pb::balancer::{
     Pool, PoolToken, PoolTokenBalanceChange, PoolTokenBalanceChanges, PoolTokens, Pools,
 };
 use crate::tables::Tables;
+use pb::balancer::Vault;
 use substreams::errors::Error;
 use substreams::prelude::*;
 use substreams::store::{StoreAddBigInt, StoreSetProto};
 use substreams::{log, Hex};
 use substreams_entity_change::pb::entity::EntityChanges;
 use substreams_ethereum::pb::eth as ethpb;
+
+#[substreams::handlers::map]
+pub fn map_vault_deployed(block: Block) -> Result<Vault, Error> {
+    match block.number {
+        12272146 => Ok(Vault {
+            id: Hex(VAULT_ADDRESS).to_string(),
+            address: Hex(VAULT_ADDRESS).to_string(),
+            pools_count: "0".to_string(),
+        }),
+        _ => Ok(Vault::default()),
+    }
+}
+
+#[substreams::handlers::store]
+pub fn store_vault(vault: Vault, store: StoreSetProto<Vault>) {
+    let vault_id = &vault.id;
+    store.set(0, format!("vault:{vault_id}"), &vault);
+}
 
 #[substreams::handlers::map]
 pub fn map_pools_registered(block: Block) -> Result<Pools, Error> {
