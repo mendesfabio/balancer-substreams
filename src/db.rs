@@ -12,12 +12,12 @@ pub fn vault_deployed_entity_change(tables: &mut Tables) {
 }
 
 fn create_vault_entity(tables: &mut Tables) {
-    let vault_address = Hex(VAULT_ADDRESS).to_string();
+    let vault_address = Hex(&VAULT_ADDRESS).to_string();
     let bigint0 = BigInt::zero();
 
     tables
         .create_row("Vault", format!("0x{}", &vault_address))
-        .set("address", format!("0x{}", &vault_address))
+        .set("address", &hex::decode(&vault_address).unwrap())
         .set("poolsCount", bigint0);
 }
 
@@ -30,7 +30,7 @@ pub fn pools_registered_pool_entity_changes(tables: &mut Tables, pools: &Pools) 
 fn create_pool_entity(tables: &mut Tables, pool: &Pool) {
     tables
         .create_row("Pool", format!("0x{}", &pool.id))
-        .set("address", format!("0x{}", &pool.address))
+        .set("address", &hex::decode(&pool.address).unwrap())
         .set("vault", format!("0x{}", &pool.vault));
 }
 
@@ -88,7 +88,7 @@ fn create_token_entity(tables: &mut Tables, token: &Token) {
 
     tables
         .create_row("Token", format!("0x{token_id}"))
-        .set("address", format!("0x{token_id}"))
+        .set("address", &hex::decode(&token.address).unwrap())
         .set("symbol", &token.symbol)
         .set("decimals", token.decimals)
         .set("name", &token.name);
