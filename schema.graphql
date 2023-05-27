@@ -1,11 +1,28 @@
+type Vault @entity {
+  id: ID!
+  address: Bytes!
+  poolsCount: Int!
+  pools: [Pool!]! @derivedFrom(field: "vault")
+}
+
 type Pool @entity {
   id: ID!
-  address: String!
+  address: Bytes!
+  vault: Vault!
+  tokens: [PoolToken!]! @derivedFrom(field: "pool")
 }
 
 type PoolToken @entity {
   id: ID!
-  address: String!
-  poolId: String!
+  pool: Pool!
+  token: Token!
   balance: BigInt!
+}
+
+type Token @entity {
+  id: ID!
+  address: Bytes!
+  symbol: String
+  decimals: Int
+  name: String
 }
