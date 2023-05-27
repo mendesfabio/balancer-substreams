@@ -88,7 +88,7 @@ fn create_token_entity(tables: &mut Tables, token: &Token) {
 
     tables
         .create_row("Token", format!("0x{token_id}"))
-        .set("address", &token.address)
+        .set("address", format!("0x{token_id}"))
         .set("symbol", &token.symbol)
         .set("decimals", token.decimals)
         .set("name", &token.name);
