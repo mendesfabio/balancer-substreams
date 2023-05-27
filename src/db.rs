@@ -31,8 +31,14 @@ fn create_pool_token_entity(tables: &mut Tables, pool_token: &PoolToken) {
 
     tables
         .create_row("PoolToken", format!("0x{}", &pool_token.id))
-        .set("address", format!("0x{}", &pool_token.address))
-        .set("poolId", format!("0x{}", &pool_token.pool_id))
+        .set(
+            "pool",
+            format!("0x{}", &pool_token.pool.as_ref().unwrap().id),
+        )
+        .set(
+            "token",
+            format!("0x{}", &pool_token.token.as_ref().unwrap().address),
+        )
         .set("balance", bigint0);
 }
 
