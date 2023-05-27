@@ -23,6 +23,6 @@ type Token @entity {
   id: ID!
   address: Bytes!
   symbol: String
-  decimals: Int
+  decimals: BigInt
   name: String
 }
