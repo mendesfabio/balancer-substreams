@@ -13,12 +13,31 @@ use crate::pb::balancer::{
     Pool, PoolToken, PoolTokenBalanceChange, PoolTokenBalanceChanges, PoolTokens, Pools,
 };
 use crate::tables::Tables;
+use pb::balancer::Vault;
 use substreams::errors::Error;
 use substreams::prelude::*;
 use substreams::store::{StoreAddBigInt, StoreSetProto};
 use substreams::{log, Hex};
 use substreams_entity_change::pb::entity::EntityChanges;
 use substreams_ethereum::pb::eth as ethpb;
+
+#[substreams::handlers::map]
+pub fn map_vault_deployed(block: Block) -> Result<Vault, Error> {
+    match block.number {
+        12272146 => Ok(Vault {
+            id: Hex(VAULT_ADDRESS).to_string(),
+            address: Hex(VAULT_ADDRESS).to_string(),
+            pools_count: "0".to_string(),
+        }),
+        _ => Ok(Vault::default()),
+    }
+}
+
+#[substreams::handlers::store]
+pub fn store_vault(vault: Vault, store: StoreSetProto<Vault>) {
+    let vault_id = &vault.id;
+    store.set(0, format!("vault:{vault_id}"), &vault);
+}
 
 #[substreams::handlers::map]
 pub fn map_pools_registered(block: Block) -> Result<Pools, Error> {
@@ -199,12 +218,14 @@ pub fn store_pool_token_balances(
 
 #[substreams::handlers::map]
 pub fn graph_out(
+    vault_deployed: Vault,                           /* map_vault_deployed */
     pools_registered: Pools,                         /* map_pools_registered */
     pool_tokens_registered: PoolTokens,              /* map_pool_tokens_registered */
     pool_token_balances_deltas: Deltas<DeltaBigInt>, /* store_pool_token_balances */
 ) -> Result<EntityChanges, Error> {
     let mut tables = Tables::new();
 
+    db::vault_deployed_entity_change(&mut tables, &vault_deployed);
     db::pools_registered_pool_entity_changes(&mut tables, &pools_registered);
     db::pool_tokens_registered_pool_token_entity_changes(&mut tables, &pool_tokens_registered);
     db::pool_token_balance_entity_change(&mut tables, &pool_token_balances_deltas);
