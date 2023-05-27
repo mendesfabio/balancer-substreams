@@ -2,12 +2,6 @@ syntax = "proto3";
 
 package balancer.types.v1;
 
-message Vault {
-  string id = 1;
-  string address = 2;
-  string poolsCount = 3;
-}
-
 message Pools {
   repeated Pool pools = 1;
 }
@@ -15,7 +9,7 @@ message Pools {
 message Pool {
   string id = 1;
   string address = 2;
-  Vault vault = 3;
+  string vault = 3;
 }
 
 message PoolTokens {

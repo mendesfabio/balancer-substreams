@@ -17,8 +17,8 @@ use crate::pb::balancer::{
     Pool, PoolToken, PoolTokenBalanceChange, PoolTokenBalanceChanges, PoolTokens, Pools, Token,
 };
 use crate::tables::Tables;
-use pb::balancer::Vault;
 use substreams::errors::Error;
+use substreams::pb::substreams::Clock;
 use substreams::prelude::*;
 use substreams::store::{StoreAddBigInt, StoreSetProto};
 use substreams::{log, Hex};
@@ -26,32 +26,8 @@ use substreams_entity_change::pb::entity::EntityChanges;
 use substreams_ethereum::pb::eth as ethpb;
 
 #[substreams::handlers::map]
-pub fn map_vault_deployed(block: Block) -> Result<Vault, Error> {
-    match block.number {
-        12272146 => Ok(Vault {
-            id: Hex(VAULT_ADDRESS).to_string(),
-            address: Hex(VAULT_ADDRESS).to_string(),
-            pools_count: "0".to_string(),
-        }),
-        _ => Ok(Vault::default()),
-    }
-}
-
-#[substreams::handlers::store]
-pub fn store_vault(vault: Vault, store: StoreSetProto<Vault>) {
-    let vault_id = &vault.id;
-    store.set(0, format!("vault:{vault_id}"), &vault);
-}
-
-#[substreams::handlers::map]
-pub fn map_pools_registered(
-    block: Block,
-    vault_store: StoreGetProto<Vault>,
-) -> Result<Pools, Error> {
+pub fn map_pools_registered(block: Block) -> Result<Pools, Error> {
     use abi::vault::events::PoolRegistered;
-
-    let vault_id = Hex(VAULT_ADDRESS).to_string();
-    let vault = vault_store.get_last(format!("vault:{vault_id}"));
 
     Ok(Pools {
         pools: block
@@ -62,7 +38,7 @@ pub fn map_pools_registered(
                 Some(Pool {
                     id: Hex(event.pool_id).to_string(),
                     address: Hex(event.pool_address).to_string(),
-                    vault: vault.clone(),
+                    vault: Hex(VAULT_ADDRESS).to_string(),
                 })
             })
             .collect(),
@@ -264,15 +240,18 @@ pub fn store_pool_token_balances(
 
 #[substreams::handlers::map]
 pub fn graph_out(
-    vault_deployed: Vault,                           /* map_vault_deployed */
-    pools_registered: Pools,                         /* map_pools_registered */
-    pool_tokens_registered: PoolTokens,              /* map_pool_tokens_registered */
-    tokens_store: StoreGetInt64,                     /* store_erc20_tokens */
+    clock: Clock,
+    pools_registered: Pools,            /* map_pools_registered */
+    pool_tokens_registered: PoolTokens, /* map_pool_tokens_registered */
+    tokens_store: StoreGetInt64,        /* store_erc20_tokens */
     pool_token_balances_deltas: Deltas<DeltaBigInt>, /* store_pool_token_balances */
 ) -> Result<EntityChanges, Error> {
     let mut tables = Tables::new();
 
-    db::vault_deployed_entity_change(&mut tables, &vault_deployed);
+    if clock.number == 12272146 {
+        db::vault_deployed_entity_change(&mut tables);
+    }
+
     db::pools_registered_pool_entity_changes(&mut tables, &pools_registered);
     db::pool_tokens_registered_pool_token_entity_changes(&mut tables, &pool_tokens_registered);
     db::tokens_created_token_entity_changes(&mut tables, &pool_tokens_registered, tokens_store);

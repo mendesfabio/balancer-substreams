@@ -1,20 +1,23 @@
 use substreams::scalar::BigInt;
 use substreams::store::{key_first_segment_in, DeltaBigInt, Deltas, StoreGet, StoreGetInt64};
+use substreams::Hex;
 
+use crate::contants::VAULT_ADDRESS;
 use crate::key;
-use crate::pb::balancer::{Pool, PoolToken, PoolTokens, Pools, Token, Vault};
+use crate::pb::balancer::{Pool, PoolToken, PoolTokens, Pools, Token};
 use crate::tables::Tables;
 
-pub fn vault_deployed_entity_change(tables: &mut Tables, vault: &Vault) {
-    create_vault_entity(tables, vault);
+pub fn vault_deployed_entity_change(tables: &mut Tables) {
+    create_vault_entity(tables);
 }
 
-fn create_vault_entity(tables: &mut Tables, vault: &Vault) {
+fn create_vault_entity(tables: &mut Tables) {
+    let vault_address = Hex(VAULT_ADDRESS).to_string();
     let bigint0 = BigInt::zero();
 
     tables
-        .create_row("Vault", format!("0x{}", &vault.id))
-        .set("address", format!("0x{}", &vault.address))
+        .create_row("Vault", format!("0x{}", &vault_address))
+        .set("address", format!("0x{}", &vault_address))
         .set("poolsCount", bigint0);
 }
 
@@ -27,7 +30,8 @@ pub fn pools_registered_pool_entity_changes(tables: &mut Tables, pools: &Pools) 
 fn create_pool_entity(tables: &mut Tables, pool: &Pool) {
     tables
         .create_row("Pool", format!("0x{}", &pool.id))
-        .set("address", format!("0x{}", &pool.address));
+        .set("address", format!("0x{}", &pool.address))
+        .set("vault", format!("0x{}", &pool.vault));
 }
 
 pub fn pool_tokens_registered_pool_token_entity_changes(
@@ -84,7 +88,7 @@ fn create_token_entity(tables: &mut Tables, token: &Token) {
 
     tables
         .create_row("Token", format!("0x{token_id}"))
-        .set("address", &token.address)
+        .set("address", format!("0x{token_id}"))
         .set("symbol", &token.symbol)
         .set("decimals", token.decimals)
         .set("name", &token.name);
