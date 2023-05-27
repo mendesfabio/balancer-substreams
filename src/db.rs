@@ -5,6 +5,10 @@ use crate::key;
 use crate::pb::balancer::{Pool, PoolToken, PoolTokens, Pools, Vault};
 use crate::tables::Tables;
 
+pub fn vault_deployed_entity_change(tables: &mut Tables, vault: &Vault) {
+    create_vault_entity(tables, vault);
+}
+
 fn create_vault_entity(tables: &mut Tables, vault: &Vault) {
     let bigint0 = BigInt::zero();
 

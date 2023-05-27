@@ -218,12 +218,14 @@ pub fn store_pool_token_balances(
 
 #[substreams::handlers::map]
 pub fn graph_out(
+    vault_deployed: Vault,                           /* map_vault_deployed */
     pools_registered: Pools,                         /* map_pools_registered */
     pool_tokens_registered: PoolTokens,              /* map_pool_tokens_registered */
     pool_token_balances_deltas: Deltas<DeltaBigInt>, /* store_pool_token_balances */
 ) -> Result<EntityChanges, Error> {
     let mut tables = Tables::new();
 
+    db::vault_deployed_entity_change(&mut tables, &vault_deployed);
     db::pools_registered_pool_entity_changes(&mut tables, &pools_registered);
     db::pool_tokens_registered_pool_token_entity_changes(&mut tables, &pool_tokens_registered);
     db::pool_token_balance_entity_change(&mut tables, &pool_token_balances_deltas);
