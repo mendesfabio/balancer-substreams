@@ -1,5 +1,9 @@
-.vscode
+.envrc
 .idea
-.DS_Store
-/target
+/target/
 *.spkg
+*~
+/env/
+/build
+debug.log
+replay.log
