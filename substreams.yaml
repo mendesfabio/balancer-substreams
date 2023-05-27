@@ -26,7 +26,7 @@ modules:
     output:
       type: proto:balancer.types.v1.Vault
 
-  - name: store_pools
+  - name: store_vault
     kind: store
     initialBlock: 12272146
     updatePolicy: set
