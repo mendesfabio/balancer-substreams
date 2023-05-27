@@ -2,8 +2,17 @@ use substreams::scalar::BigInt;
 use substreams::store::{key_first_segment_in, DeltaBigInt, Deltas};
 
 use crate::key;
-use crate::pb::balancer::{Pool, PoolToken, PoolTokens, Pools};
+use crate::pb::balancer::{Pool, PoolToken, PoolTokens, Pools, Vault};
 use crate::tables::Tables;
+
+fn create_vault_entity(tables: &mut Tables, vault: &Vault) {
+    let bigint0 = BigInt::zero();
+
+    tables
+        .create_row("Vault", format!("0x{}", &vault.id))
+        .set("address", format!("0x{}", &vault.address))
+        .set("poolsCount", bigint0);
+}
 
 pub fn pools_registered_pool_entity_changes(tables: &mut Tables, pools: &Pools) {
     for pool in &pools.pools {
