@@ -1,8 +1,8 @@
 use substreams::scalar::BigInt;
-use substreams::store::{key_first_segment_in, DeltaBigInt, Deltas};
+use substreams::store::{key_first_segment_in, DeltaBigInt, Deltas, StoreGet, StoreGetInt64};
 
 use crate::key;
-use crate::pb::balancer::{Pool, PoolToken, PoolTokens, Pools, Vault};
+use crate::pb::balancer::{Pool, PoolToken, PoolTokens, Pools, Token, Vault};
 use crate::tables::Tables;
 
 pub fn vault_deployed_entity_change(tables: &mut Tables, vault: &Vault) {
@@ -53,6 +53,41 @@ fn create_pool_token_entity(tables: &mut Tables, pool_token: &PoolToken) {
             format!("0x{}", &pool_token.token.as_ref().unwrap().address),
         )
         .set("balance", bigint0);
+}
+
+pub fn tokens_created_token_entity_changes(
+    tables: &mut Tables,
+    pool_tokens: &PoolTokens,
+    tokens_store: StoreGetInt64,
+) {
+    for pool_token in &pool_tokens.pool_tokens {
+        let token_id = &pool_token.token.as_ref().unwrap().id;
+
+        match tokens_store.get_at(0, format!("token:{token_id}")) {
+            Some(value) => {
+                if value.eq(&1) {
+                    create_token_entity(tables, pool_token.token.as_ref().unwrap());
+                }
+            }
+            None => {
+                panic!(
+                    "pool contains token that doesn't exist {}",
+                    token_id.as_str()
+                )
+            }
+        }
+    }
+}
+
+fn create_token_entity(tables: &mut Tables, token: &Token) {
+    let token_id = &token.id;
+
+    tables
+        .create_row("Token", format!("0x{token_id}"))
+        .set("address", &token.address)
+        .set("symbol", &token.symbol)
+        .set("decimals", token.decimals)
+        .set("name", &token.name);
 }
 
 pub fn pool_token_balance_entity_change(
