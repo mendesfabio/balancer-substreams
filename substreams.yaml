@@ -34,6 +34,13 @@ modules:
     inputs:
       - map: map_pools_registered
 
+  - name: store_vault_pool_count
+    kind: store
+    updatePolicy: add
+    valueType: bigint
+    inputs:
+      - map: map_pools_registered
+
   - name: map_pool_tokens_registered
     kind: map
     initialBlock: 12272146
