@@ -29,7 +29,7 @@ pub fn pool_registered_vault_entity_change(
 
     pool_count_deltas.deltas.iter().for_each(|delta| {
         tables
-            .update_row("Vault", &vault_address)
+            .update_row("Vault", format!("0x{}", &vault_address))
             .set("poolCount", &delta.new_value);
     })
 }
