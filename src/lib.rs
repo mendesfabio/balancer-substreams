@@ -53,6 +53,13 @@ pub fn store_pools(pools: Pools, store: StoreSetProto<Pool>) {
     }
 }
 
+#[substreams::handlers::store]
+pub fn store_vault_pool_count(pools: Pools, store: StoreAddBigInt) {
+    for _pool in pools.pools {
+        store.add(0, format!("vault:poolCount"), &BigInt::one())
+    }
+}
+
 #[substreams::handlers::map]
 pub fn map_pool_tokens_registered(
     block: Block,
@@ -241,9 +248,10 @@ pub fn store_pool_token_balances(
 #[substreams::handlers::map]
 pub fn graph_out(
     clock: Clock,
-    pools_registered: Pools,            /* map_pools_registered */
-    pool_tokens_registered: PoolTokens, /* map_pool_tokens_registered */
-    tokens_store: StoreGetInt64,        /* store_erc20_tokens */
+    pools_registered: Pools,                /* map_pools_registered */
+    pool_tokens_registered: PoolTokens,     /* map_pool_tokens_registered */
+    tokens_store: StoreGetInt64,            /* store_erc20_tokens */
+    pool_count_deltas: Deltas<DeltaBigInt>, /* store_vault_pool_count */
     pool_token_balances_deltas: Deltas<DeltaBigInt>, /* store_pool_token_balances */
 ) -> Result<EntityChanges, Error> {
     let mut tables = Tables::new();
@@ -252,6 +260,7 @@ pub fn graph_out(
         db::vault_deployed_entity_change(&mut tables);
     }
 
+    db::pool_registered_vault_entity_change(&mut tables, &pool_count_deltas);
     db::pools_registered_pool_entity_changes(&mut tables, &pools_registered);
     db::pool_tokens_registered_pool_token_entity_changes(&mut tables, &pool_tokens_registered);
     db::tokens_created_token_entity_changes(&mut tables, &pool_tokens_registered, tokens_store);
