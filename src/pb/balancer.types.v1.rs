@@ -67,4 +67,22 @@ pub struct PoolTokenBalanceChange {
     #[prost(string, tag="2")]
     pub delta_balance: ::prost::alloc::string::String,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InternalBalanceChanges {
+    #[prost(message, repeated, tag="1")]
+    pub internal_balance_changes: ::prost::alloc::vec::Vec<InternalBalanceChange>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InternalBalanceChange {
+    #[prost(string, tag="1")]
+    pub id: ::prost::alloc::string::String,
+    #[prost(string, tag="2")]
+    pub user_address: ::prost::alloc::string::String,
+    #[prost(string, tag="3")]
+    pub token_address: ::prost::alloc::string::String,
+    #[prost(string, tag="4")]
+    pub delta_balance: ::prost::alloc::string::String,
+}
 // @@protoc_insertion_point(module)

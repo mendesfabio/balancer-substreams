@@ -26,3 +26,10 @@ type Token @entity {
   decimals: BigInt
   name: String
 }
+
+type InternalBalance @entity {
+  id: ID!
+  userAddress: Bytes!
+  tokenAddress: Bytes!
+  balance: BigInt!
+}
