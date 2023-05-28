@@ -14,9 +14,11 @@ use std::borrow::Borrow;
 use crate::contants::VAULT_ADDRESS;
 use crate::ethpb::v2::Block;
 use crate::pb::balancer::{
-    Pool, PoolToken, PoolTokenBalanceChange, PoolTokenBalanceChanges, PoolTokens, Pools, Token,
+    InternalBalanceChange, Pool, PoolToken, PoolTokenBalanceChange, PoolTokenBalanceChanges,
+    PoolTokens, Pools, Token,
 };
 use crate::tables::Tables;
+use pb::balancer::InternalBalanceChanges;
 use substreams::errors::Error;
 use substreams::pb::substreams::Clock;
 use substreams::prelude::*;
@@ -246,12 +248,61 @@ pub fn store_pool_token_balances(
 }
 
 #[substreams::handlers::map]
+pub fn map_internal_balance_changes(block: Block) -> Result<InternalBalanceChanges, Error> {
+    use abi::vault::events::InternalBalanceChanged;
+
+    Ok(InternalBalanceChanges {
+        internal_balance_changes: block
+            .events::<InternalBalanceChanged>(&[&VAULT_ADDRESS])
+            .filter_map(|(event, _log)| {
+                log::info!("user_address: {}", Hex(&event.user));
+
+                Some(InternalBalanceChange {
+                    id: format!("{}-{}", Hex(&event.user), Hex(&event.token)),
+                    user_address: Hex(&event.user).to_string(),
+                    token_address: Hex(&event.token).to_string(),
+                    delta_balance: event.delta.to_string(),
+                })
+            })
+            .collect(),
+    })
+}
+
+#[substreams::handlers::store]
+pub fn store_internal_balance_changes(
+    internal_balance_changes: InternalBalanceChanges,
+    store: StoreAddBigInt,
+) {
+    for change in &internal_balance_changes.internal_balance_changes {
+        store.add(
+            0,
+            format!("internal_balance_changed:{}", change.id),
+            &BigInt::try_from(&change.delta_balance).unwrap(),
+        );
+    }
+}
+
+#[substreams::handlers::store]
+pub fn store_user_internal_balances(
+    internal_balance_changes: InternalBalanceChanges,
+    store: StoreAddInt64,
+) {
+    for change in internal_balance_changes.internal_balance_changes {
+        let id = &change.id;
+        store.add(0, format!("internal_balance:{id}"), 1);
+    }
+}
+
+#[substreams::handlers::map]
 pub fn graph_out(
     clock: Clock,
-    pools_registered: Pools,                /* map_pools_registered */
-    pool_tokens_registered: PoolTokens,     /* map_pool_tokens_registered */
-    tokens_store: StoreGetInt64,            /* store_erc20_tokens */
-    pool_count_deltas: Deltas<DeltaBigInt>, /* store_vault_pool_count */
+    pools_registered: Pools,                      /* map_pools_registered */
+    pool_tokens_registered: PoolTokens,           /* map_pool_tokens_registered */
+    internal_balances: InternalBalanceChanges,    /* map_internal_balance_changes */
+    tokens_store: StoreGetInt64,                  /* store_erc20_tokens */
+    internal_balance_store: StoreGetInt64,        /* store_user_internal_balances */
+    pool_count_deltas: Deltas<DeltaBigInt>,       /* store_vault_pool_count */
+    internal_balance_deltas: Deltas<DeltaBigInt>, /* store_internal_balance_changes */
     pool_token_balances_deltas: Deltas<DeltaBigInt>, /* store_pool_token_balances */
 ) -> Result<EntityChanges, Error> {
     let mut tables = Tables::new();
@@ -265,6 +316,14 @@ pub fn graph_out(
     db::pool_tokens_registered_pool_token_entity_changes(&mut tables, &pool_tokens_registered);
     db::tokens_created_token_entity_changes(&mut tables, &pool_tokens_registered, tokens_store);
     db::pool_token_balance_entity_change(&mut tables, &pool_token_balances_deltas);
+
+    // Internal Balance
+    db::internal_balances_created_internal_balance_entity_changes(
+        &mut tables,
+        &internal_balances,
+        internal_balance_store,
+    );
+    db::internal_balance_entity_change(&mut tables, &internal_balance_deltas);
 
     Ok(tables.to_entity_changes())
 }
