@@ -1,7 +1,7 @@
 type Vault @entity {
   id: ID!
   address: Bytes!
-  poolsCount: BigInt!
+  poolCount: BigInt!
   pools: [Pool!]! @derivedFrom(field: "vault")
 }
 

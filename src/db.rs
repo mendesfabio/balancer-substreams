@@ -18,7 +18,20 @@ fn create_vault_entity(tables: &mut Tables) {
     tables
         .create_row("Vault", format!("0x{}", &vault_address))
         .set("address", &hex::decode(&vault_address).unwrap())
-        .set("poolsCount", bigint0);
+        .set("poolCount", bigint0);
+}
+
+pub fn pool_registered_vault_entity_change(
+    tables: &mut Tables,
+    pool_count_deltas: &Deltas<DeltaBigInt>,
+) {
+    let vault_address = Hex(&VAULT_ADDRESS).to_string();
+
+    pool_count_deltas.deltas.iter().for_each(|delta| {
+        tables
+            .update_row("Vault", &vault_address)
+            .set("poolCount", &delta.new_value);
+    })
 }
 
 pub fn pools_registered_pool_entity_changes(tables: &mut Tables, pools: &Pools) {
