@@ -9,6 +9,123 @@
     pub mod events {
         use super::INTERNAL_ERR;
         #[derive(Debug, Clone, PartialEq)]
+        pub struct InternalBalanceChanged {
+            pub user: Vec<u8>,
+            pub token: Vec<u8>,
+            pub delta: substreams::scalar::BigInt,
+        }
+        impl InternalBalanceChanged {
+            const TOPIC_ID: [u8; 32] = [
+                24u8,
+                225u8,
+                234u8,
+                65u8,
+                57u8,
+                230u8,
+                132u8,
+                19u8,
+                215u8,
+                208u8,
+                138u8,
+                167u8,
+                82u8,
+                231u8,
+                21u8,
+                104u8,
+                227u8,
+                107u8,
+                44u8,
+                91u8,
+                249u8,
+                64u8,
+                137u8,
+                51u8,
+                20u8,
+                194u8,
+                197u8,
+                176u8,
+                30u8,
+                170u8,
+                12u8,
+                66u8,
+            ];
+            pub fn match_log(log: &substreams_ethereum::pb::eth::v2::Log) -> bool {
+                if log.topics.len() != 3usize {
+                    return false;
+                }
+                if log.data.len() != 32usize {
+                    return false;
+                }
+                return log.topics.get(0).expect("bounds already checked").as_ref()
+                    == Self::TOPIC_ID;
+            }
+            pub fn decode(
+                log: &substreams_ethereum::pb::eth::v2::Log,
+            ) -> Result<Self, String> {
+                let mut values = ethabi::decode(
+                        &[ethabi::ParamType::Int(256usize)],
+                        log.data.as_ref(),
+                    )
+                    .map_err(|e| format!("unable to decode log.data: {:?}", e))?;
+                values.reverse();
+                Ok(Self {
+                    user: ethabi::decode(
+                            &[ethabi::ParamType::Address],
+                            log.topics[1usize].as_ref(),
+                        )
+                        .map_err(|e| {
+                            format!(
+                                "unable to decode param 'user' from topic of type 'address': {:?}",
+                                e
+                            )
+                        })?
+                        .pop()
+                        .expect(INTERNAL_ERR)
+                        .into_address()
+                        .expect(INTERNAL_ERR)
+                        .as_bytes()
+                        .to_vec(),
+                    token: ethabi::decode(
+                            &[ethabi::ParamType::Address],
+                            log.topics[2usize].as_ref(),
+                        )
+                        .map_err(|e| {
+                            format!(
+                                "unable to decode param 'token' from topic of type 'address': {:?}",
+                                e
+                            )
+                        })?
+                        .pop()
+                        .expect(INTERNAL_ERR)
+                        .into_address()
+                        .expect(INTERNAL_ERR)
+                        .as_bytes()
+                        .to_vec(),
+                    delta: {
+                        let mut v = [0 as u8; 32];
+                        values
+                            .pop()
+                            .expect(INTERNAL_ERR)
+                            .into_int()
+                            .expect(INTERNAL_ERR)
+                            .to_big_endian(v.as_mut_slice());
+                        substreams::scalar::BigInt::from_signed_bytes_be(&v)
+                    },
+                })
+            }
+        }
+        impl substreams_ethereum::Event for InternalBalanceChanged {
+            const NAME: &'static str = "InternalBalanceChanged";
+            fn match_log(log: &substreams_ethereum::pb::eth::v2::Log) -> bool {
+                Self::match_log(log)
+            }
+            fn decode(
+                log: &substreams_ethereum::pb::eth::v2::Log,
+            ) -> Result<Self, String> {
+                Self::decode(log)
+            }
+        }
+        #[derive(Debug, Clone, PartialEq)]
         pub struct PoolBalanceChanged {
             pub pool_id: [u8; 32usize],
             pub liquidity_provider: Vec<u8>,
