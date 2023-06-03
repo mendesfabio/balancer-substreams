@@ -102,6 +102,29 @@ modules:
       - map: map_managed_balance_changes
       - map: map_swap_balance_changes
 
+  - name: map_internal_balance_changes
+    kind: map
+    initialBlock: 12272146
+    inputs:
+      - source: sf.ethereum.type.v2.Block
+    output:
+      type: proto:balancer.types.v1.InternalBalanceChanges
+
+  - name: store_user_internal_balances
+    kind: store
+    updatePolicy: add
+    valueType: int64
+    inputs:
+      - map: map_internal_balance_changes
+
+  - name: store_internal_balance_changes
+    kind: store
+    updatePolicy: add
+    initialBlock: 12272146
+    valueType: bigint
+    inputs:
+      - map: map_internal_balance_changes
+
   - name: graph_out
     kind: map
     initialBlock: 12272146
@@ -109,8 +132,12 @@ modules:
       - source: sf.substreams.v1.Clock
       - map: map_pools_registered
       - map: map_pool_tokens_registered
+      - map: map_internal_balance_changes
       - store: store_erc20_tokens
+      - store: store_user_internal_balances
       - store: store_vault_pool_count
+        mode: deltas
+      - store: store_internal_balance_changes
         mode: deltas
       - store: store_pool_token_balances
         mode: deltas

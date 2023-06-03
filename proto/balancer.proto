@@ -43,3 +43,14 @@ message PoolTokenBalanceChange {
   PoolToken pool_token = 1;
   string delta_balance = 2;
 }
+
+message InternalBalanceChanges {
+  repeated InternalBalanceChange internal_balance_changes = 1;
+}
+
+message InternalBalanceChange {
+  string id = 1;
+  string user_address = 2;
+  string token_address = 3;
+  string delta_balance = 4;
+}

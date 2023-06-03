@@ -4,7 +4,9 @@ use substreams::Hex;
 
 use crate::contants::VAULT_ADDRESS;
 use crate::key;
-use crate::pb::balancer::{Pool, PoolToken, PoolTokens, Pools, Token};
+use crate::pb::balancer::{
+    InternalBalanceChange, InternalBalanceChanges, Pool, PoolToken, PoolTokens, Pools, Token,
+};
 use crate::tables::Tables;
 
 pub fn vault_deployed_entity_change(tables: &mut Tables) {
@@ -119,6 +121,60 @@ pub fn pool_token_balance_entity_change(
         let pool_token_id = key::segment(&delta.key, 1);
         tables
             .update_row("PoolToken", &format!("0x{pool_token_id}"))
+            .set("balance", &delta.new_value);
+    }
+}
+
+pub fn internal_balances_created_internal_balance_entity_changes(
+    tables: &mut Tables,
+    internal_balance_changes: &InternalBalanceChanges,
+    internal_balance_store: StoreGetInt64,
+) {
+    for change in &internal_balance_changes.internal_balance_changes {
+        let id = &change.id;
+
+        match internal_balance_store.get_at(0, format!("internal_balance:{id}")) {
+            Some(value) => {
+                if value.eq(&1) {
+                    create_internal_balance_entity(tables, change);
+                }
+            }
+            None => {
+                panic!("internal balance doesn't exist {}", id.as_str())
+            }
+        }
+    }
+}
+
+fn create_internal_balance_entity(tables: &mut Tables, internal_balance: &InternalBalanceChange) {
+    let id = &internal_balance.id;
+    let bigint0 = BigInt::zero();
+
+    tables
+        .create_row("InternalBalance", format!("0x{id}"))
+        .set(
+            "userAddress",
+            &hex::decode(&internal_balance.user_address).unwrap(),
+        )
+        .set(
+            "tokenAddress",
+            &hex::decode(&internal_balance.token_address).unwrap(),
+        )
+        .set("balance", &bigint0);
+}
+
+pub fn internal_balance_entity_change(
+    tables: &mut Tables,
+    internal_balance_deltas: &Deltas<DeltaBigInt>,
+) {
+    for delta in internal_balance_deltas
+        .deltas
+        .iter()
+        .filter(key_first_segment_in("internal_balance_changed"))
+    {
+        let id = key::segment(&delta.key, 1);
+        tables
+            .update_row("InternalBalance", &format!("0x{id}"))
             .set("balance", &delta.new_value);
     }
 }
